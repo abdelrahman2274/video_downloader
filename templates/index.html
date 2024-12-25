@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avideo - تحميل فديوهات Download videos</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f1f1f1;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 20px;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        h2 {
+            color: #666;
+            font-size: 18px;
+            margin-top: 10px;
+            font-weight: 400;
+        }
+
+        .container {
+            width: 60%;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-top: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .container:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="text"], select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            background-color: #1c5d8d;
+            transform: scale(0.98);
+        }
+
+        .error {
+            color: red;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .formats-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .loading {
+            font-size: 16px;
+            color: #666;
+        }
+
+        #progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 20px;
+            height: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #progress-bar div {
+            height: 100%;
+            width: 0;
+            background-color: #8e44ad;
+            border-radius: 20px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 14px;
+        }
+
+        input[type="text"], select {
+            font-size: 16px;
+        }
+
+        label {
+            font-size: 18px;
+            font-weight: 500;
+            color: #333;
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>تنزل فيديوهات مجانا (يوتيوب - فيس بوك - انستجرام - الخ....)</h1>
+        <h2>Download videos free (YouTube - Facebook - Instagram - etc ....)</h2>
+
+        <form id="download-form">
+            <label for="video_url">أدخل رابط الفيديو - Inter the video link</label><br>
+            <input type="text" id="video_url" name="video_url" placeholder="https://www.youtube.com/watch?v=..." required><br><br>
+            
+            <button type="button" id="search-button"> بحث عن الجودة - Search about quality</button>
+
+            <div id="formats-container" class="formats-container">
+                <label for="quality">اختر الجودة - Choose the quality</label><br>
+                <select id="quality" name="quality" required>
+                    <option value="">اختر الجودة - Choose the quality</option>
+                </select><br><br>
+
+                <button type="submit">تحميل الفيديو - Download the video </button>
+            </div>
+        </form>
+
+        <div id="error-message" class="error"></div>
+        <div id="loading" class="loading" style="display: none;">جاري البحث عن الجودات...</div>
+        
+        <!-- شريط التحميل -->
+        <div id="progress-bar">
+            <div id="progress" style="width: 0%;">0%</div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // عند النقر على زر البحث
+            $("#search-button").on("click", function() {
+                var videoUrl = $("#video_url").val();
+                if (videoUrl) {
+                    $("#loading").show();  // إظهار النص أثناء تحميل الجودات
+                    $("#formats-container").hide(); // إخفاء قائمة الجودات السابقة قبل التحميل الجديد
+                    $("#progress-bar").hide(); // إخفاء شريط التحميل أثناء البحث عن الجودات
+                    $("#error-message").text(""); // مسح رسائل الخطأ السابقة
+
+                    // إرسال طلب لجلب الجودات
+                    $.ajax({
+                        type: "POST",
+                        url: "/get_formats",
+                        data: { video_url: videoUrl },
+                        success: function(response) {
+                            $("#loading").hide();
+
+                            // تحديث الخيارات في قائمة الجودة
+                            var qualitySelect = $("#quality");
+                            qualitySelect.empty();
+                            qualitySelect.append('<option value="">اختر الجودة</option>');
+
+                            response.forEach(function(format) {
+                                qualitySelect.append('<option value="' + format.quality_value + '">' + format.quality + '</option>');
+                            });
+
+                            // إظهار قائمة الجودات
+                            $("#formats-container").show();
+                        },
+                        error: function(error) {
+                            $("#loading").hide();
+                            var errorMessage = error.responseJSON ? error.responseJSON.error : "حدث خطأ أثناء جلب الجودات.";
+                            $("#error-message").text(errorMessage);
+                        }
+                    });
+                } else {
+                    $("#error-message").text("من فضلك أدخل رابط الفيديو.");
+                }
+            });
+
+            // إرسال البيانات للنزول بالملف
+            $("#download-form").on("submit", function(e) {
+                e.preventDefault();
+                
+                var videoUrl = $("#video_url").val();
+                var quality = $("#quality").val();
+
+                if (!videoUrl || !quality) {
+                    $("#error-message").text("من فضلك، تأكد من إدخال رابط الفيديو واختيار الجودة.");
+                    return;
+                }
+
+                // إظهار شريط التحميل فقط عند تنزيل الفيديو
+                $("#progress-bar").show();
+                $("#progress").css("width", "0%").text("0%");
+
+                $.ajax({
+                    type: "POST",
+                    url: "/download",
+                    data: {
+                        video_url: videoUrl,
+                        quality: quality,
+                        audio_only: 'false'
+                    },
+                    xhr: function() {
+                        var xhr = new XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function(e) {
+                            if (e.lengthComputable) {
+                                var percent = (e.loaded / e.total) * 100;
+                                $("#progress").css("width", percent + "%").text(Math.round(percent) + "%");
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function(response) {
+                        window.location.href = response; // إعادة توجيه المستخدم لتحميل الملف
+                    },
+                    error: function(error) {
+                        var errorMessage = error.responseJSON ? error.responseJSON.error : "حدث خطأ أثناء التحميل. الرجاء المحاولة لاحقًا.";
+                        $("#error-message").text(errorMessage);
+                        $("#progress-bar").hide(); // إخفاء شريط التحميل في حال الخطأ
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
